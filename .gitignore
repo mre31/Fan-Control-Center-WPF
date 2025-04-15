@@ -1,0 +1,39 @@
+# Visual Studio dosyaları
+.vs/
+*.suo
+*.user
+*.sln.docstates
+
+# Build çıktıları
+[Dd]ebug/
+[Rr]elease/
+x64/
+x86/
+[Bb]in/
+[Oo]bj/
+
+# NuGet paketleri
+packages/
+*.nupkg
+
+# MSTest test sonuçları
+[Tt]est[Rr]esult*/
+[Bb]uild[Ll]og.*
+
+# Resharper
+_ReSharper*/
+*.[Rr]e[Ss]harper
+*.DotSettings.user
+
+# Visual Studio IntelliSense
+*.sln.ide/
+
+# Windows özgü dosyalar
+Thumbs.db
+Desktop.ini
+
+# Uygulama özgü dosyalar
+*.log
+*.cache
+
+/docs/*
