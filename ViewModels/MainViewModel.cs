@@ -253,22 +253,15 @@ namespace CFanControl.ViewModels
             _awccService.OnSensorUpdated += AWCCService_OnSensorUpdated;
         }
         
-        private void CheckAutoStartStatus()
+        private async void CheckAutoStartStatus()
         {
             try
             {
-                using (RegistryKey key = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", false))
+                bool isEnabled = await _autoStartService.IsEnabledAsync();
+                if (isEnabled != _isAutoStartEnabled)
                 {
-                    if (key != null)
-                    {
-                        string execPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
-                        bool isInRegistry = key.GetValue("FanControlCenter") != null;
-                        
-                        if (isInRegistry != _isAutoStartEnabled)
-                        {
-                            SetStartupRegistry(_isAutoStartEnabled);
-                        }
-                    }
+                    _isAutoStartEnabled = isEnabled;
+                    SetStartupRegistry(_isAutoStartEnabled);
                 }
             }
             catch
@@ -604,23 +597,13 @@ namespace CFanControl.ViewModels
         {
             try
             {
-                using (RegistryKey key = Registry.CurrentUser.OpenSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run", true))
+                if (enable)
                 {
-                    if (key != null)
-                    {
-                        if (enable)
-                        {
-                            string execPath = System.Reflection.Assembly.GetExecutingAssembly().Location;
-                            key.SetValue("FanControlCenter", execPath);
-                        }
-                        else
-                        {
-                            if (key.GetValue("FanControlCenter") != null)
-                            {
-                                key.DeleteValue("FanControlCenter");
-                            }
-                        }
-                    }
+                    _ = _autoStartService.EnableAsync();
+                }
+                else
+                {
+                    _ = _autoStartService.DisableAsync();
                 }
             }
             catch

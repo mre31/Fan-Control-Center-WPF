@@ -293,17 +293,16 @@ namespace CFanControl.Services
             bool success = returnValue.HasValue && returnValue.Value == 0;
             return success;
         }
-
         public bool SetAllFanSpeeds(int cpuSpeed, int gpuSpeed)
         {
             bool success = true;
-            
+
             if (!SetFanSpeed(_hardwareInfo.CpuFanId, cpuSpeed))
                 success = false;
-            
+
             if (!SetFanSpeed(_hardwareInfo.GpuFanId, gpuSpeed))
                 success = false;
-            
+
             return success;
         }
 
@@ -359,7 +358,7 @@ namespace CFanControl.Services
         public bool ApplyProfile(FanProfile profile)
         {
             if (profile == null || !_isInitialized) return false;
-            
+
             return SetAllFanSpeeds(profile.CpuSpeed, profile.GpuSpeed);
         }
 
@@ -385,17 +384,17 @@ namespace CFanControl.Services
             if (disposing)
             {
                 OnSensorUpdated = null;
-                
+
                 StopPeriodicUpdates();
-                
+
                 _semaphore?.Dispose();
-                
+
                 if (_awcc != null)
                 {
                     _awcc.Dispose();
                     _awcc = null;
                 }
-                
+
                 if (_comAwcc != null)
                 {
                     Marshal.ReleaseComObject(_comAwcc);
@@ -458,104 +457,178 @@ namespace CFanControl.Services
         public void StartPeriodicUpdates(int intervalMs = 1000)
         {
             StopPeriodicUpdates();
-            
+
             _updateCancellation = new CancellationTokenSource();
+            var localToken = _updateCancellation?.Token ?? CancellationToken.None;
+
             _updateTask = Task.Run(async () =>
             {
-                while (!_updateCancellation.Token.IsCancellationRequested)
+                try
                 {
-                    try
+                    while (true)
                     {
-                        var cpuTempTask = Task.Run(() => 
-                        {
-                            var result = InvokeWmiMethod("Thermal_Information", ((0x01 & 0xFF) << 8) | 4);
-                            return GetWmiReturnValue(result);
-                        });
-                        
-                        await Task.Delay(25, _updateCancellation.Token);
-                        
-                        var cpuFanTask = Task.Run(() => 
-                        {
-                            var result = InvokeWmiMethod("Thermal_Information", ((0x32 & 0xFF) << 8) | 5);
-                            return GetWmiReturnValue(result);
-                        });
-                        
-                        await Task.Delay(25, _updateCancellation.Token);
-                        
-                        var gpuTempTask = Task.Run(() => 
-                        {
-                            var result = InvokeWmiMethod("Thermal_Information", ((0x06 & 0xFF) << 8) | 4);
-                            return GetWmiReturnValue(result);
-                        });
-                        
-                        await Task.Delay(25, _updateCancellation.Token);
-                        
-                        var gpuFanTask = Task.Run(() => 
-                        {
-                            var result = InvokeWmiMethod("Thermal_Information", ((0x33 & 0xFF) << 8) | 5);
-                            return GetWmiReturnValue(result);
-                        });
-                        
-                        var cpuTemp = await cpuTempTask;
-                        var cpuFan = await cpuFanTask;
-                        var gpuTemp = await gpuTempTask;
-                        var gpuFan = await gpuFanTask;
+                        if (_updateCancellation == null || _updateCancellation.Token.IsCancellationRequested)
+                            break;
 
-                        if (cpuTemp.HasValue && cpuFan.HasValue)
+                        try
                         {
-                            OnSensorUpdated?.Invoke(this, new SensorUpdateEventArgs
+                            var cpuTempTask = Task.Run(() =>
                             {
-                                SensorId = 0x01,
-                                Temperature = cpuTemp.Value,
-                                FanRPM = cpuFan.Value
+                                var result = InvokeWmiMethod("Thermal_Information", ((0x01 & 0xFF) << 8) | 4);
+                                return GetWmiReturnValue(result);
                             });
-                        }
 
-                        if (gpuTemp.HasValue && gpuFan.HasValue)
-                        {
-                            OnSensorUpdated?.Invoke(this, new SensorUpdateEventArgs
+                            await Task.Delay(25, CancellationToken.None);
+
+                            if (_updateCancellation == null || _updateCancellation.Token.IsCancellationRequested)
+                                break;
+
+                            var cpuFanTask = Task.Run(() =>
                             {
-                                SensorId = 0x06,
-                                Temperature = gpuTemp.Value,
-                                FanRPM = gpuFan.Value
+                                var result = InvokeWmiMethod("Thermal_Information", ((0x32 & 0xFF) << 8) | 5);
+                                return GetWmiReturnValue(result);
                             });
-                        }
 
-                        await Task.Delay(intervalMs, _updateCancellation.Token);
-                    }
-                    catch (TaskCanceledException)
-                    {
-                        break;
-                    }
-                    catch (Exception)
-                    {
-                        await Task.Delay(5000, _updateCancellation.Token);
+                            await Task.Delay(25, CancellationToken.None);
+
+                            if (_updateCancellation == null || _updateCancellation.Token.IsCancellationRequested)
+                                break;
+
+                            var gpuTempTask = Task.Run(() =>
+                            {
+                                var result = InvokeWmiMethod("Thermal_Information", ((0x06 & 0xFF) << 8) | 4);
+                                return GetWmiReturnValue(result);
+                            });
+
+                            await Task.Delay(25, CancellationToken.None);
+
+                            if (_updateCancellation == null || _updateCancellation.Token.IsCancellationRequested)
+                                break;
+
+                            var gpuFanTask = Task.Run(() =>
+                            {
+                                var result = InvokeWmiMethod("Thermal_Information", ((0x33 & 0xFF) << 8) | 5);
+                                return GetWmiReturnValue(result);
+                            });
+
+                            if (_updateCancellation == null || _updateCancellation.Token.IsCancellationRequested)
+                                break;
+
+                            var cpuTemp = await cpuTempTask;
+                            var cpuFan = await cpuFanTask;
+                            var gpuTemp = await gpuTempTask;
+                            var gpuFan = await gpuFanTask;
+
+                            if (_updateCancellation == null || _updateCancellation.Token.IsCancellationRequested)
+                                break;
+
+                            if (cpuTemp.HasValue && cpuFan.HasValue)
+                            {
+                                OnSensorUpdated?.Invoke(this, new SensorUpdateEventArgs
+                                {
+                                    SensorId = 0x01,
+                                    Temperature = cpuTemp.Value,
+                                    FanRPM = cpuFan.Value
+                                });
+                            }
+
+                            if (gpuTemp.HasValue && gpuFan.HasValue)
+                            {
+                                OnSensorUpdated?.Invoke(this, new SensorUpdateEventArgs
+                                {
+                                    SensorId = 0x06,
+                                    Temperature = gpuTemp.Value,
+                                    FanRPM = gpuFan.Value
+                                });
+                            }
+
+                            if (_updateCancellation == null || _updateCancellation.Token.IsCancellationRequested)
+                                break;
+
+                            try
+                            {
+                                var currentToken = _updateCancellation?.Token ?? CancellationToken.None;
+                                if (currentToken.IsCancellationRequested)
+                                    break;
+
+                                await Task.Delay(intervalMs, currentToken);
+                            }
+                            catch (TaskCanceledException)
+                            {
+                                break;
+                            }
+                            catch (ObjectDisposedException)
+                            {
+                                break;
+                            }
+                        }
+                        catch (TaskCanceledException)
+                        {
+                            break;
+                        }
+                        catch (OperationCanceledException)
+                        {
+                            break;
+                        }
+                        catch (ObjectDisposedException)
+                        {
+                            break;
+                        }
+                        catch (Exception)
+                        {
+                            if (_updateCancellation == null)
+                                break;
+
+                            try
+                            {
+                                await Task.Delay(5000, CancellationToken.None);
+                            }
+                            catch
+                            {
+                                break;
+                            }
+                        }
                     }
                 }
-            }, _updateCancellation.Token);
+                catch
+                {
+                }
+            }, localToken);
         }
 
         public void StopPeriodicUpdates()
         {
-            if (_updateCancellation != null)
+            try
             {
-                if (!_updateCancellation.IsCancellationRequested)
+                if (_updateCancellation != null)
                 {
-                    _updateCancellation.Cancel();
+                    if (!_updateCancellation.IsCancellationRequested)
+                    {
+                        _updateCancellation.Cancel();
+                    }
+
+                    _updateCancellation.Dispose();
+                    _updateCancellation = null;
                 }
 
-                _updateCancellation.Dispose();
-                _updateCancellation = null;
+                if (_updateTask != null)
+                {
+                    try
+                    {
+                        if (!_updateTask.IsCompleted && !_updateTask.IsFaulted && !_updateTask.IsCanceled)
+                        {
+                            _updateTask.Wait(2000);
+                        }
+                    }
+                    catch
+                    {
+                    }
+
+                    _updateTask = null;
+                }
             }
-
-            if (_updateTask != null)
+            catch
             {
-                if (!_updateTask.IsCompleted && !_updateTask.IsFaulted && !_updateTask.IsCanceled)
-                {
-                    _updateTask.Wait(2000);
-                }
-                
-                _updateTask = null;
             }
         }
 

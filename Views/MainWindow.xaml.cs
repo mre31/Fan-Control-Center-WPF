@@ -148,7 +148,23 @@ namespace CFanControl.Views
         private void MinimizeToTray()
         {
             Hide();
-            _notifyIcon.Visible = true;
+            
+            if (_notifyIcon == null)
+            {
+                try
+                {
+                    InitializeNotifyIcon();
+                }
+                catch (Exception)
+                {
+                    return;
+                }
+            }
+            
+            if (_notifyIcon != null)
+            {
+                _notifyIcon.Visible = true;
+            }
         }
         
         private void SaveCustomProfile_Click(object sender, RoutedEventArgs e)
@@ -225,7 +241,11 @@ namespace CFanControl.Views
             this.Show();
             this.WindowState = WindowState.Normal;
             this.Activate();
-            _notifyIcon.Visible = false;
+            
+            if (_notifyIcon != null)
+            {
+                _notifyIcon.Visible = false;
+            }
         }
 
         private void CloseApplication()
@@ -234,8 +254,16 @@ namespace CFanControl.Views
             {
                 if (_notifyIcon != null)
                 {
-                    _notifyIcon.Visible = false;
-                    _notifyIcon.Dispose();
+                    try 
+                    {
+                        _notifyIcon.Visible = false;
+                        _notifyIcon.Dispose();
+                        _notifyIcon = null;
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Error disposing notify icon: {ex.Message}");
+                    }
                 }
                 
                 if (_viewModel != null)
