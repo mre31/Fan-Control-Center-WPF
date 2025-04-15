@@ -23,9 +23,10 @@ Fan Control Center is a Windows application designed to control fan speeds on De
 ## Installation
 
 1. Download the latest release from the [releases page](https://github.com/mre31/Fan-Control-Center-WPF)
-2. Extract the ZIP file to a location of your choice
-3. Run `CFanControl.exe`
-4. The application will request administrator privileges as they are required to control fan speeds
+2. Run `CFanControl.exe`
+3. The application will request administrator privileges as they are required to control fan speeds
+4. If doesn't work download ZIP version from the [releases page](https://github.com/mre31/Fan-Control-Center-WPF)
+5. Continue from step 2.
 
 ## Usage
 
