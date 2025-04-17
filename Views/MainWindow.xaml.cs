@@ -14,6 +14,11 @@ using System.IO;
 using System.Reflection;
 using CFanControl.Services;
 using System.Diagnostics;
+using System.Windows.Media;
+using System.Windows.Media.Animation;
+using Color = System.Windows.Media.Color;
+using HorizontalAlignment = System.Windows.HorizontalAlignment;
+using VerticalAlignment = System.Windows.VerticalAlignment;
 
 namespace CFanControl.Views
 {
@@ -22,6 +27,8 @@ namespace CFanControl.Views
         private readonly MainViewModel _viewModel;
         private readonly HotkeyService _hotkeyService;
         private NotifyIcon _notifyIcon;
+        private System.Windows.Controls.Border _notificationBorder;
+        private DispatcherTimer _notificationTimer;
         
         public MainWindow()
         {
@@ -35,6 +42,120 @@ namespace CFanControl.Views
             
             _hotkeyService = new HotkeyService(this);
             _hotkeyService.HotkeyTriggered += HotkeyService_HotkeyTriggered;
+            
+            InitializeNotificationSystem();
+        }
+        
+        private void InitializeNotificationSystem()
+        {
+            // Bildirim paneli için border oluşturma
+            _notificationBorder = new System.Windows.Controls.Border
+            {
+                Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#252526")),
+                BorderBrush = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#0078D4")),
+                BorderThickness = new Thickness(1),
+                CornerRadius = new CornerRadius(5),
+                Padding = new Thickness(10),
+                VerticalAlignment = VerticalAlignment.Bottom,
+                HorizontalAlignment = HorizontalAlignment.Right,
+                Margin = new Thickness(0, 0, 10, 10),
+                Opacity = 0,
+                Visibility = Visibility.Collapsed
+            };
+            
+            // İçerik olarak bir TextBlock
+            var textBlock = new System.Windows.Controls.TextBlock
+            {
+                Foreground = new SolidColorBrush(Colors.White),
+                FontSize = 14,
+                TextWrapping = TextWrapping.Wrap
+            };
+            
+            _notificationBorder.Child = textBlock;
+            
+            // Ana grid'e ekleme
+            if (Content is System.Windows.Controls.Grid grid)
+            {
+                grid.Children.Add(_notificationBorder);
+                System.Windows.Controls.Panel.SetZIndex(_notificationBorder, 9999);
+            }
+            
+            // Timer oluşturma
+            _notificationTimer = new DispatcherTimer();
+            _notificationTimer.Tick += NotificationTimer_Tick;
+        }
+        
+        private void NotificationTimer_Tick(object sender, EventArgs e)
+        {
+            HideNotification();
+        }
+        
+        public void ShowNotification(string message, int duration = 1000)
+        {
+            // Ana iş parçacığında çalıştırma
+            Dispatcher.Invoke(() =>
+            {
+                try
+                {
+                    if (_notificationBorder == null || !_viewModel.AllowNotifications)
+                        return;
+                    
+                    // Sistem tepsisinde bildirim gösterme
+                    if (_notifyIcon != null && !IsActive)
+                    {
+                        _notifyIcon.BalloonTipTitle = "Fan Control Center";
+                        _notifyIcon.BalloonTipText = message;
+                        _notifyIcon.BalloonTipIcon = ToolTipIcon.Info;
+                        _notifyIcon.ShowBalloonTip(duration);
+                    }
+                    
+                    // Uygulama açıksa içeride bildirim gösterme
+                    if (IsActive)
+                    {
+                        // TextBlock içeriğini güncelleme
+                        if (_notificationBorder.Child is System.Windows.Controls.TextBlock textBlock)
+                        {
+                            textBlock.Text = message;
+                        }
+                        
+                        // Timer'ı durdurma ve yeniden başlatma
+                        _notificationTimer.Stop();
+                        _notificationTimer.Interval = TimeSpan.FromMilliseconds(duration);
+                        
+                        // Animasyon ile gösterme
+                        _notificationBorder.Visibility = Visibility.Visible;
+                        DoubleAnimation fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200));
+                        _notificationBorder.BeginAnimation(UIElement.OpacityProperty, fadeIn);
+                        
+                        _notificationTimer.Start();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Error showing notification: {ex.Message}");
+                }
+            });
+        }
+        
+        private void HideNotification()
+        {
+            try
+            {
+                _notificationTimer.Stop();
+                
+                // Animasyon ile gizleme
+                DoubleAnimation fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(200));
+                fadeOut.Completed += (s, e) =>
+                {
+                    _notificationBorder.Visibility = Visibility.Collapsed;
+                };
+                
+                _notificationBorder.BeginAnimation(UIElement.OpacityProperty, fadeOut);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error hiding notification: {ex.Message}");
+            }
         }
         
         private void InitializeNotifyIcon()
@@ -42,19 +163,7 @@ namespace CFanControl.Views
             _notifyIcon = new NotifyIcon();
             _notifyIcon.Text = "Fan Control Center";
             
-            var contextMenu = new System.Windows.Forms.ContextMenu();
-            
-            var showItem = new System.Windows.Forms.MenuItem("Show");
-            showItem.Click += (s, e) => RestoreWindow();
-            
-            var exitItem = new System.Windows.Forms.MenuItem("Exit");
-            exitItem.Click += (s, e) => CloseApplication();
-            
-            contextMenu.MenuItems.Add(showItem);
-            contextMenu.MenuItems.Add("-");
-            contextMenu.MenuItems.Add(exitItem);
-            
-            _notifyIcon.ContextMenu = contextMenu;
+            UpdateNotifyIconMenu();
             
             try
             {
@@ -79,9 +188,113 @@ namespace CFanControl.Views
             _notifyIcon.MouseDoubleClick += NotifyIcon_MouseDoubleClick;
         }
         
+        private void UpdateNotifyIconMenu()
+        {
+            if (_notifyIcon == null) return;
+            
+            var contextMenu = new System.Windows.Forms.ContextMenu();
+            
+            // Show pencere öğesi
+            var showItem = new System.Windows.Forms.MenuItem("Show");
+            showItem.Click += (s, e) => RestoreWindow();
+            contextMenu.MenuItems.Add(showItem);
+            
+            contextMenu.MenuItems.Add("-"); // Ayırıcı
+            
+            // Profil seçim alt menüsü
+            var profilesMenu = new System.Windows.Forms.MenuItem("Profiles");
+            if (_viewModel != null && _viewModel.ProfileNames != null)
+            {
+                foreach (var profileName in _viewModel.ProfileNames)
+                {
+                    var profileItem = new System.Windows.Forms.MenuItem(profileName);
+                    profileItem.RadioCheck = true;
+                    profileItem.Checked = profileName == _viewModel.SelectedProfileName;
+                    
+                    // Profil seçim işleyicisi
+                    profileItem.Click += (s, e) => 
+                    {
+                        var menuItem = s as System.Windows.Forms.MenuItem;
+                        if (menuItem != null)
+                        {
+                            _viewModel.SelectedProfileName = menuItem.Text;
+                            UpdateNotifyIconMenu(); // Menüyü güncelle
+                        }
+                    };
+                    
+                    profilesMenu.MenuItems.Add(profileItem);
+                }
+            }
+            contextMenu.MenuItems.Add(profilesMenu);
+            
+            // Ayarlar alt menüsü
+            var settingsMenu = new System.Windows.Forms.MenuItem("Settings");
+            
+            // Otomatik başlatma ayarı
+            var autoStartItem = new System.Windows.Forms.MenuItem("Start with Windows");
+            autoStartItem.Checked = _viewModel != null && _viewModel.IsAutoStartEnabled;
+            autoStartItem.Click += (s, e) => 
+            {
+                if (_viewModel != null)
+                {
+                    _viewModel.IsAutoStartEnabled = !_viewModel.IsAutoStartEnabled;
+                    UpdateNotifyIconMenu(); // Menüyü güncelle
+                }
+            };
+            settingsMenu.MenuItems.Add(autoStartItem);
+            
+            // Çıkışta küçültme ayarı
+            var minimizeOnExitItem = new System.Windows.Forms.MenuItem("Minimize on Exit");
+            minimizeOnExitItem.Checked = _viewModel != null && _viewModel.MinimizeOnExit;
+            minimizeOnExitItem.Click += (s, e) => 
+            {
+                if (_viewModel != null)
+                {
+                    _viewModel.MinimizeOnExit = !_viewModel.MinimizeOnExit;
+                    UpdateNotifyIconMenu(); // Menüyü güncelle
+                }
+            };
+            settingsMenu.MenuItems.Add(minimizeOnExitItem);
+            
+            // Bildirimlere izin verme ayarı
+            var allowNotificationsItem = new System.Windows.Forms.MenuItem("Allow Notifications");
+            allowNotificationsItem.Checked = _viewModel != null && _viewModel.AllowNotifications;
+            allowNotificationsItem.Click += (s, e) => 
+            {
+                if (_viewModel != null)
+                {
+                    _viewModel.AllowNotifications = !_viewModel.AllowNotifications;
+                    
+                    // Bildirimler açıldığında bir test bildirimi göster
+                    if (_viewModel.AllowNotifications)
+                    {
+                        ShowNotification("Notifications enabled", 1500);
+                    }
+                    
+                    UpdateNotifyIconMenu(); // Menüyü güncelle
+                }
+            };
+            settingsMenu.MenuItems.Add(allowNotificationsItem);
+            
+            contextMenu.MenuItems.Add(settingsMenu);
+            
+            contextMenu.MenuItems.Add("-"); // Ayırıcı
+            
+            // Çıkış öğesi
+            var exitItem = new System.Windows.Forms.MenuItem("Exit");
+            exitItem.Click += (s, e) => CloseApplication();
+            contextMenu.MenuItems.Add(exitItem);
+            
+            // Menüyü atama
+            _notifyIcon.ContextMenu = contextMenu;
+        }
+        
         private async void Window_Loaded(object sender, RoutedEventArgs e)
         {
             await _viewModel.InitializeAsync();
+            
+            // ViewModel yüklendikten sonra menüyü güncelle
+            UpdateNotifyIconMenu();
             
             string[] args = Environment.GetCommandLineArgs();
             if (args.Length > 1 && args[1] == "--minimized")
@@ -159,6 +372,11 @@ namespace CFanControl.Views
                 {
                     return;
                 }
+            }
+            else
+            {
+                // NotifyIcon'ın menüsünü güncelle
+                UpdateNotifyIconMenu();
             }
             
             if (_notifyIcon != null)
@@ -290,6 +508,24 @@ namespace CFanControl.Views
                 
                 Environment.Exit(1);
             }
+        }
+
+        private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
+        {
+            if (e.ChangedButton == MouseButton.Left)
+            {
+                DragMove();
+            }
+        }
+        
+        private void MinimizeButton_Click(object sender, RoutedEventArgs e)
+        {
+            WindowState = WindowState.Minimized;
+        }
+        
+        private void CloseButton_Click(object sender, RoutedEventArgs e)
+        {
+            Close();
         }
     }
     

@@ -42,6 +42,10 @@ namespace CFanControl.ViewModels
         
         private System.Threading.CancellationTokenSource _saveDelayTokenSource;
         
+        private bool _minimizeOnExit;
+        private readonly AppSettings _settings;
+        private bool _allowNotifications;
+        
         public HardwareInfo HardwareInfo
         {
             get => _hardwareInfo;
@@ -206,8 +210,20 @@ namespace CFanControl.ViewModels
         public ICommand StartHotkeyAssignmentCommand { get; private set; }
         public ICommand RemoveProfileCommand { get; private set; }
         
-        private bool _minimizeOnExit;
-        private readonly AppSettings _settings;
+        public bool AllowNotifications
+        {
+            get => _allowNotifications;
+            set
+            {
+                if (_allowNotifications != value)
+                {
+                    _allowNotifications = value;
+                    _settings.AllowNotifications = value;
+                    _settings.Save();
+                    OnPropertyChanged();
+                }
+            }
+        }
         
         public bool MinimizeOnExit
         {
@@ -388,12 +404,36 @@ namespace CFanControl.ViewModels
                 
                 ApplyCurrentProfileSpeeds();
 
-                _profileService.SetLastProfile(SelectedProfileName); 
+                _profileService.SetLastProfile(SelectedProfileName);
+                
+                // Show notification for profile change
+                if (AllowNotifications)
+                {
+                    ShowProfileChangeNotification(SelectedProfileName);
+                }
             }
             else
             {
                 CurrentProfile = null; 
                 MessageBox.Show($"'{SelectedProfileName}' profile could not be found.", "Error", MessageBoxButton.OK, MessageBoxImage.Warning);
+            }
+        }
+        
+        private void ShowProfileChangeNotification(string profileName)
+        {
+            try
+            {
+                Application.Current.Dispatcher.Invoke(() =>
+                {
+                    if (Application.Current.MainWindow is Views.MainWindow mainWindow)
+                    {
+                        mainWindow.ShowNotification($"Profile changed to: {profileName}", 1000);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error showing notification: {ex.Message}");
             }
         }
         
@@ -574,22 +614,53 @@ namespace CFanControl.ViewModels
         {
             try
             {
-                string appDataPath = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-                string fanControlDir = Path.Combine(appDataPath, "FanControl");
-                string settingsPath = Path.Combine(fanControlDir, "settings.json");
-
-                if (File.Exists(settingsPath))
+                _isAutoStartEnabled = _settings.AutoStart;
+                _minimizeOnExit = _settings.MinimizeOnExit;
+                _allowNotifications = _settings.AllowNotifications;
+                
+                _hotkeyService.UnregisterAllHotkeys();
+                
+                if (_settings.ProfileHotkeys != null)
                 {
-                    string json = File.ReadAllText(settingsPath);
-                    var settings = System.Text.Json.JsonSerializer.Deserialize<Dictionary<string, bool>>(json);
-                    if (settings.TryGetValue("MinimizeOnExit", out bool minimizeOnExit))
+                    foreach (var hotkeyEntry in _settings.ProfileHotkeys)
                     {
-                        _minimizeOnExit = minimizeOnExit;
+                        string profileName = hotkeyEntry.Key;
+                        string hotkeyString = hotkeyEntry.Value;
+                        
+                        if (!string.IsNullOrEmpty(profileName) && !string.IsNullOrEmpty(hotkeyString))
+                        {
+                            try
+                            {
+                                var parts = hotkeyString.Split('+');
+                                if (parts.Length >= 2)
+                                {
+                                    ModifierKeys modifierKeys = ModifierKeys.None;
+                                    
+                                    for (int i = 0; i < parts.Length - 1; i++)
+                                    {
+                                        if (Enum.TryParse<ModifierKeys>(parts[i], out var modifier))
+                                        {
+                                            modifierKeys |= modifier;
+                                        }
+                                    }
+                                    
+                                    if (Enum.TryParse<Key>(parts[parts.Length - 1], out var key))
+                                    {
+                                        _hotkeyService.SetHotkey(profileName, key, modifierKeys);
+                                    }
+                                }
+                            }
+                            catch (Exception ex)
+                            {
+                                Debug.WriteLine($"Failed to parse hotkey '{hotkeyString}' for profile '{profileName}': {ex.Message}");
+                            }
+                        }
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                Debug.WriteLine($"Error applying loaded settings: {ex.Message}");
             }
         }
 
@@ -599,11 +670,11 @@ namespace CFanControl.ViewModels
             {
                 if (enable)
                 {
-                    _ = _autoStartService.EnableAsync();
+                    _autoStartService.EnableAsync().ConfigureAwait(false);
                 }
                 else
                 {
-                    _ = _autoStartService.DisableAsync();
+                    _autoStartService.DisableAsync().ConfigureAwait(false);
                 }
             }
             catch

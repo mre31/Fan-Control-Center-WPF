@@ -6,14 +6,17 @@
         xmlns:local="clr-namespace:CFanControl.Views"
         xmlns:viewmodels="clr-namespace:CFanControl.ViewModels"
         mc:Ignorable="d"
-        Title="Fan Control Center" Height="400" Width="800"
-        MinHeight="400" MinWidth="800"
+        Title="Fan Control Center" Height="420" Width="800"
+        MinHeight="420" MinWidth="800"
         Icon="/Resources/icon.ico"
-        Background="{StaticResource WindowBackgroundBrush}"
+        Background="Transparent"
         KeyDown="Window_KeyDown"
         Loaded="Window_Loaded"
         Closing="Window_Closing"
-        WindowStartupLocation="CenterScreen">
+        WindowStartupLocation="CenterScreen"
+        WindowStyle="None"
+        AllowsTransparency="True"
+        ResizeMode="NoResize">
 
     <Window.Resources>
         <BooleanToVisibilityConverter x:Key="BooleanToVisibilityConverter"/>
@@ -197,252 +200,320 @@
 
     </Window.Resources>
 
-    <Grid Margin="15">
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="Auto"/>
-        </Grid.RowDefinitions>
-
-        <!-- Top Panel: Title and Hardware Info -->
-        <Grid Grid.Row="0" Margin="0,0,0,15">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-                <ColumnDefinition Width="Auto"/>
-            </Grid.ColumnDefinitions>
-
-            <StackPanel Grid.Column="0">
-                <TextBlock Text="Fan Control Center" 
-                           FontSize="24" FontWeight="SemiBold" 
-                           Foreground="{StaticResource TextPrimaryBrush}"/>
-            </StackPanel>
-
-            <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                <CheckBox Content="Auto Start" 
-                          IsChecked="{Binding IsAutoStartEnabled}" 
-                          Margin="0,0,20,0"
-                          VerticalAlignment="Center"
-                          Foreground="#FFFFFF"/>
-
-                <CheckBox Content="Minimize on Exit" 
-                         IsChecked="{Binding MinimizeOnExit}"
-                         VerticalAlignment="Center"
-                         Foreground="#FFFFFF"/>
-            </StackPanel>
-        </Grid>
-
-        <!-- Main Content -->
-        <Grid Grid.Row="1">
-            <Grid.ColumnDefinitions>
-                <ColumnDefinition Width="*"/>
-            </Grid.ColumnDefinitions>
-
-            <!-- Left Panel: Hardware Info and Manual Controls -->
-            <Border Background="{StaticResource ControlBackgroundBrush}"
-                    BorderBrush="#333333" BorderThickness="1"
-                    CornerRadius="5" Margin="0" Padding="15">
-                <Grid Margin="0,0,0,0" VerticalAlignment="Center">
+    <Border Background="{StaticResource WindowBackgroundBrush}" CornerRadius="5" BorderThickness="1" BorderBrush="#333333">
+        <Grid>
+            <Grid.RowDefinitions>
+                <RowDefinition Height="30"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            
+            <!-- Custom Title Bar -->
+            <Border Grid.Row="0" Background="{StaticResource ControlBackgroundBrush}" 
+                    CornerRadius="5,5,0,0" MouseDown="TitleBar_MouseDown">
+                <Grid>
                     <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
                         <ColumnDefinition Width="*"/>
+                        <ColumnDefinition Width="Auto"/>
+                    </Grid.ColumnDefinitions>
+                    
+                    <!-- App Icon and Title -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" Margin="10,0,0,0">
+                        <Image Source="/Resources/icon.ico" Width="16" Height="16" Margin="0,0,5,0"/>
+                        <TextBlock Text="Fan Control Center" VerticalAlignment="Center" Foreground="{StaticResource TextPrimaryBrush}"/>
+                    </StackPanel>
+                    
+                    <!-- Window Controls -->
+                    <StackPanel Grid.Column="2" Orientation="Horizontal" HorizontalAlignment="Right">
+                        <Button x:Name="MinimizeButton" Content="&#xE921;" FontFamily="Segoe MDL2 Assets" 
+                                Width="45" Height="30" Background="Transparent" BorderThickness="0"
+                                Foreground="{StaticResource TextPrimaryBrush}" Click="MinimizeButton_Click"/>
+                        <Button x:Name="CloseButton" Content="&#xE8BB;" FontFamily="Segoe MDL2 Assets" 
+                                Width="45" Height="30" Background="Transparent" BorderThickness="0"
+                                Foreground="{StaticResource TextPrimaryBrush}" Click="CloseButton_Click">
+                            <Button.Style>
+                                <Style TargetType="Button">
+                                    <Setter Property="Background" Value="Transparent"/>
+                                    <Setter Property="Template">
+                                        <Setter.Value>
+                                            <ControlTemplate TargetType="Button">
+                                                <Border x:Name="border" Background="{TemplateBinding Background}" CornerRadius="0,5,0,0">
+                                                    <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                                </Border>
+                                                <ControlTemplate.Triggers>
+                                                    <Trigger Property="IsMouseOver" Value="True">
+                                                        <Setter Property="Background" Value="#E81123" TargetName="border"/>
+                                                        <Setter Property="Foreground" Value="White"/>
+                                                    </Trigger>
+                                                    <Trigger Property="IsPressed" Value="True">
+                                                        <Setter Property="Background" Value="#F1707A" TargetName="border"/>
+                                                        <Setter Property="Foreground" Value="White"/>
+                                                    </Trigger>
+                                                </ControlTemplate.Triggers>
+                                            </ControlTemplate>
+                                        </Setter.Value>
+                                    </Setter>
+                                </Style>
+                            </Button.Style>
+                        </Button>
+                    </StackPanel>
+                </Grid>
+            </Border>
+            
+            <!-- Main Content -->
+            <Grid Grid.Row="1" Margin="15">
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="Auto"/>
+                    <RowDefinition Height="*"/>
+                    <RowDefinition Height="Auto"/>
+                </Grid.RowDefinitions>
+
+                <!-- Top Panel: Title and Hardware Info -->
+                <Border Grid.Row="0" Margin="0,0,0,15" 
+                        Background="{StaticResource ControlBackgroundBrush}"
+                        BorderBrush="#333333" BorderThickness="1" 
+                        CornerRadius="5" Padding="10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*"/>
+                            <ColumnDefinition Width="Auto"/>
+                        </Grid.ColumnDefinitions>
+
+                        <StackPanel Grid.Column="0">
+                            <TextBlock Text="Fan Control Center" 
+                                       FontSize="24" FontWeight="SemiBold" 
+                                       Foreground="{StaticResource TextPrimaryBrush}"/>
+                        </StackPanel>
+
+                        <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                            <CheckBox Content="Auto Start" 
+                                      IsChecked="{Binding IsAutoStartEnabled}" 
+                                      Margin="0,0,20,0"
+                                      VerticalAlignment="Center"
+                                      Foreground="{StaticResource TextPrimaryBrush}"/>
+
+                            <CheckBox Content="Minimize on Exit" 
+                                     IsChecked="{Binding MinimizeOnExit}"
+                                     VerticalAlignment="Center"
+                                     Foreground="{StaticResource TextPrimaryBrush}"/>
+                        </StackPanel>
+                    </Grid>
+                </Border>
+
+                <!-- Main Content -->
+                <Grid Grid.Row="1">
+                    <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*"/>
                     </Grid.ColumnDefinitions>
 
-                    <!-- CPU Status -->
-                    <Border Grid.Column="0" BorderBrush="#333333" BorderThickness="1" Margin="0,0,5,0" CornerRadius="5" Padding="10">
-                        <StackPanel>
-                            <TextBlock Text="CPU" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding HardwareInfo.CpuName}" TextWrapping="Wrap" 
-                                       HorizontalAlignment="Center" Margin="0,5,0,10" 
-                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                    <!-- Left Panel: Hardware Info and Manual Controls -->
+                    <Border Background="{StaticResource ControlBackgroundBrush}"
+                            BorderBrush="#333333" BorderThickness="1"
+                            CornerRadius="5" Margin="0" Padding="15">
+                        <Grid Margin="0,0,0,0" VerticalAlignment="Center">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="*"/>
+                            </Grid.ColumnDefinitions>
 
-                            <Grid Margin="0,10,0,0">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Temperature:" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding HardwareInfo.CpuTemperature, StringFormat={}{0}°C}" VerticalAlignment="Center"/>
-                                <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Minimum="0" Maximum="100" Value="{Binding HardwareInfo.CpuTemperature, TargetNullValue=0}" Height="6" Margin="0,3,0,0"/>
-                            </Grid>
+                            <!-- CPU Status -->
+                            <Border Grid.Column="0" BorderBrush="#333333" BorderThickness="1" Margin="0,0,5,0" CornerRadius="5" Padding="10">
+                                <StackPanel>
+                                    <TextBlock Text="CPU" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding HardwareInfo.CpuName}" TextWrapping="Wrap" 
+                                               HorizontalAlignment="Center" Margin="0,5,0,10" 
+                                               Foreground="{StaticResource TextSecondaryBrush}"/>
 
-                            <Grid Margin="0,5,0,0">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Fan Speed:" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding HardwareInfo.CpuFanRpm, StringFormat={}{0} RPM}" VerticalAlignment="Center"/>
-                                <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Minimum="0" Maximum="5100" Value="{Binding HardwareInfo.CpuFanRpm, TargetNullValue=0}" Height="6" Margin="0,3,0,0"/>
-                            </Grid>
+                                    <Grid Margin="0,10,0,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Temperature:" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding HardwareInfo.CpuTemperature, StringFormat={}{0}°C}" VerticalAlignment="Center"/>
+                                        <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Minimum="0" Maximum="100" Value="{Binding HardwareInfo.CpuTemperature, TargetNullValue=0}" Height="6" Margin="0,3,0,0"/>
+                                    </Grid>
 
-                            <!-- CPU Slider -->
-                            <TextBlock Text="CPU Fan Speed" Margin="0,10,0,5"/>
-                            <Slider Minimum="0" Maximum="100" Value="{Binding CpuManualSpeed}"
-                                    Style="{StaticResource ModernSliderStyle}" 
-                                    TickPlacement="None"
-                                    Thumb.DragCompleted="Slider_DragCompleted"/>
-                        </StackPanel>
+                                    <Grid Margin="0,5,0,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Fan Speed:" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding HardwareInfo.CpuFanRpm, StringFormat={}{0} RPM}" VerticalAlignment="Center"/>
+                                        <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Minimum="0" Maximum="5100" Value="{Binding HardwareInfo.CpuFanRpm, TargetNullValue=0}" Height="6" Margin="0,3,0,0"/>
+                                    </Grid>
+
+                                    <!-- CPU Slider -->
+                                    <TextBlock Text="CPU Fan Speed" Margin="0,10,0,5"/>
+                                    <Slider Minimum="0" Maximum="100" Value="{Binding CpuManualSpeed}"
+                                            Style="{StaticResource ModernSliderStyle}" 
+                                            TickPlacement="None"
+                                            Thumb.DragCompleted="Slider_DragCompleted"/>
+                                </StackPanel>
+                            </Border>
+
+                            <!-- GPU Status -->
+                            <Border Grid.Column="1" BorderBrush="#333333" BorderThickness="1" Margin="5,0,0,0" CornerRadius="5" Padding="10">
+                                <StackPanel>
+                                    <TextBlock Text="GPU" FontWeight="SemiBold" HorizontalAlignment="Center"/>
+                                    <TextBlock Text="{Binding HardwareInfo.GpuName}" TextWrapping="Wrap" 
+                                               HorizontalAlignment="Center" Margin="0,5,0,10" 
+                                               Foreground="{StaticResource TextSecondaryBrush}"/>
+
+                                    <Grid Margin="0,10,0,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Temperature:" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding HardwareInfo.GpuTemperature, StringFormat={}{0}°C}" VerticalAlignment="Center"/>
+                                        <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Minimum="0" Maximum="100" Value="{Binding HardwareInfo.GpuTemperature, TargetNullValue=0}" Height="6" Margin="0,3,0,0"/>
+                                    </Grid>
+
+                                    <Grid Margin="0,5,0,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="Auto"/>
+                                            <RowDefinition Height="Auto"/>
+                                        </Grid.RowDefinitions>
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="Auto"/>
+                                            <ColumnDefinition Width="*"/>
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Row="0" Grid.Column="0" Text="Fan Speed:" Margin="0,0,5,0" VerticalAlignment="Center"/>
+                                        <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding HardwareInfo.GpuFanRpm, StringFormat={}{0} RPM}" VerticalAlignment="Center"/>
+                                        <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Minimum="0" Maximum="5100" Value="{Binding HardwareInfo.GpuFanRpm, TargetNullValue=0}" Height="6" Margin="0,3,0,0"/>
+                                    </Grid>
+
+                                    <!-- GPU Slider -->
+                                    <TextBlock Text="GPU Fan Speed" Margin="0,10,0,5"/>
+                                    <Slider Minimum="0" Maximum="100" Value="{Binding GpuManualSpeed}"
+                                            Style="{StaticResource ModernSliderStyle}" 
+                                            TickPlacement="None"
+                                            Thumb.DragCompleted="Slider_DragCompleted"/>
+                                </StackPanel>
+                            </Border>
+                        </Grid>
                     </Border>
+                </Grid>
 
-                    <!-- GPU Status -->
-                    <Border Grid.Column="1" BorderBrush="#333333" BorderThickness="1" Margin="5,0,0,0" CornerRadius="5" Padding="10">
-                        <StackPanel>
-                            <TextBlock Text="GPU" FontWeight="SemiBold" HorizontalAlignment="Center"/>
-                            <TextBlock Text="{Binding HardwareInfo.GpuName}" TextWrapping="Wrap" 
-                                       HorizontalAlignment="Center" Margin="0,5,0,10" 
-                                       Foreground="{StaticResource TextSecondaryBrush}"/>
+                <!-- Bottom Panel: Status Information -->
+                <Border Grid.Row="2" Margin="0,15,0,0" 
+                        Background="{StaticResource ControlBackgroundBrush}" 
+                        BorderBrush="#333333" BorderThickness="1" 
+                        CornerRadius="5" Padding="10">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="Auto"/>
+                            <ColumnDefinition Width="*"/>
+                        </Grid.ColumnDefinitions>
 
-                            <Grid Margin="0,10,0,0">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Temperature:" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding HardwareInfo.GpuTemperature, StringFormat={}{0}°C}" VerticalAlignment="Center"/>
-                                <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Minimum="0" Maximum="100" Value="{Binding HardwareInfo.GpuTemperature, TargetNullValue=0}" Height="6" Margin="0,3,0,0"/>
-                            </Grid>
+                        <TextBlock Grid.Column="0" Text="Active Profile:" VerticalAlignment="Center" Margin="0,0,5,0"/>
 
-                            <Grid Margin="0,5,0,0">
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="Auto"/>
-                                    <RowDefinition Height="Auto"/>
-                                </Grid.RowDefinitions>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <TextBlock Grid.Row="0" Grid.Column="0" Text="Fan Speed:" Margin="0,0,5,0" VerticalAlignment="Center"/>
-                                <TextBlock Grid.Row="0" Grid.Column="1" Text="{Binding HardwareInfo.GpuFanRpm, StringFormat={}{0} RPM}" VerticalAlignment="Center"/>
-                                <ProgressBar Grid.Row="1" Grid.ColumnSpan="2" Minimum="0" Maximum="5100" Value="{Binding HardwareInfo.GpuFanRpm, TargetNullValue=0}" Height="6" Margin="0,3,0,0"/>
-                            </Grid>
+                        <ComboBox Grid.Column="1" 
+                                  ItemsSource="{Binding ProfileNames}"
+                                  SelectedItem="{Binding SelectedProfileName, Mode=TwoWay}"
+                                  MinWidth="95"
+                                  Style="{StaticResource AppComboBoxStyle}"
+                                  VerticalAlignment="Center" 
+                                  Margin="0,0,10,0">
+                        </ComboBox>
 
-                            <!-- GPU Slider -->
-                            <TextBlock Text="GPU Fan Speed" Margin="0,10,0,5"/>
-                            <Slider Minimum="0" Maximum="100" Value="{Binding GpuManualSpeed}"
-                                    Style="{StaticResource ModernSliderStyle}" 
-                                    TickPlacement="None"
-                                    Thumb.DragCompleted="Slider_DragCompleted"/>
+                        <Button Grid.Column="2" 
+                                Content="Change Hotkey"
+                                Style="{StaticResource DefaultButtonStyle}"
+                                Click="ChangeHotkey_Click"
+                                Padding="8,4" Height="22"
+                                HorizontalAlignment="Left"
+                                VerticalAlignment="Center"
+                                VerticalContentAlignment="Center"/>
+
+                        <TextBlock Grid.Column="3" 
+                                   VerticalAlignment="Center"
+                                   HorizontalAlignment="Right">
+                            <Hyperlink NavigateUri="https://github.com/mre31/Fan-Control-Center-WPF" Click="Github_Click" TextDecorations="None">
+                                <StackPanel Orientation="Horizontal">
+                                    <Path Data="M8,0 C3.58,0 0,3.58 0,8 C0,11.54 2.29,14.53 5.47,15.59 C5.87,15.66 6.02,15.42 6.02,15.21 C6.02,15.02 6.01,14.39 6.01,13.72 C4,14.09 3.48,13.23 3.32,12.78 C3.23,12.55 2.84,11.84 2.5,11.65 C2.22,11.5 1.82,11.13 2.49,11.12 C3.12,11.11 3.57,11.7 3.72,11.94 C4.44,13.15 5.59,12.81 6.05,12.6 C6.12,12.08 6.33,11.73 6.56,11.53 C4.78,11.33 2.92,10.64 2.92,7.58 C2.92,6.71 3.23,5.99 3.74,5.43 C3.66,5.23 3.38,4.41 3.82,3.31 C3.82,3.31 4.49,3.1 6.02,4.13 C6.66,3.95 7.34,3.86 8.02,3.86 C8.7,3.86 9.38,3.95 10.02,4.13 C11.55,3.09 12.22,3.31 12.22,3.31 C12.66,4.41 12.38,5.23 12.3,5.43 C12.81,5.99 13.12,6.71 13.12,7.58 C13.12,10.65 11.25,11.33 9.47,11.53 C9.76,11.78 10.01,12.26 10.01,13.01 C10.01,14.08 10,14.94 10,15.21 C10,15.42 10.15,15.67 10.55,15.59 C13.71,14.53 16,11.53 16,8 C16,3.58 12.42,0 8,0 Z" 
+                                          Fill="White" 
+                                          Width="16" 
+                                          Height="16" 
+                                          Margin="0,0,5,0"
+                                          VerticalAlignment="Center"/>
+                                    <TextBlock Text="Github" VerticalAlignment="Center"/>
+                                </StackPanel>
+                            </Hyperlink>
+                        </TextBlock>
+                    </Grid>
+                </Border>
+
+                <!-- Hotkey Assignment Overlay -->
+                <Grid Grid.Row="0" Grid.RowSpan="3" 
+                      Background="#80000000" 
+                      Visibility="{Binding IsHotkeyCapturing, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="-20,-40,-20,-28">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="59*"/>
+                        <RowDefinition Height="25*"/>
+                    </Grid.RowDefinitions>
+                    <Border Background="{StaticResource ControlBackgroundBrush}" 
+                            BorderBrush="{StaticResource PrimaryBrush}" 
+                            BorderThickness="1" 
+                            CornerRadius="5" 
+                            Padding="20" Margin="254,134,254,8">
+                        <StackPanel VerticalAlignment="Center">
+
+                            <TextBlock Text="Press the desired hotkey combination..." 
+                                       TextWrapping="Wrap" TextAlignment="Center" 
+                                       Margin="0,0,0,20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
+
+                            <Button Content="Cancel" 
+                                    HorizontalAlignment="Center" 
+                                    Style="{StaticResource DefaultButtonStyle}" 
+                                    Click="CancelHotkeyAssignment_Click"/>
                         </StackPanel>
                     </Border>
                 </Grid>
-            </Border>
-        </Grid>
-
-        <!-- Bottom Panel: Status Information -->
-        <Border Grid.Row="2" Margin="0,15,0,0" 
-                Background="{StaticResource ControlBackgroundBrush}" 
-                BorderBrush="#333333" BorderThickness="1" 
-                CornerRadius="5" Padding="10">
-            <Grid>
-                <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
-                </Grid.ColumnDefinitions>
-
-                <TextBlock Grid.Column="0" Text="Active Profile:" VerticalAlignment="Center" Margin="0,0,5,0"/>
-
-                <ComboBox Grid.Column="1" 
-                          ItemsSource="{Binding ProfileNames}"
-                          SelectedItem="{Binding SelectedProfileName, Mode=TwoWay}"
-                          MinWidth="95"
-                          Style="{StaticResource AppComboBoxStyle}"
-                          VerticalAlignment="Center" 
-                          Margin="0,0,10,0">
-                </ComboBox>
-
-                <Button Grid.Column="2" 
-                        Content="Change Hotkey"
-                        Style="{StaticResource DefaultButtonStyle}"
-                        Click="ChangeHotkey_Click"
-                        Padding="8,4" Height="22"
-                        HorizontalAlignment="Left"
-                        VerticalAlignment="Center"
-                        VerticalContentAlignment="Center"/>
-
-                <TextBlock Grid.Column="3" 
-                           VerticalAlignment="Center"
-                           HorizontalAlignment="Right">
-                    <Hyperlink NavigateUri="https://github.com/mre31/Fan-Control-Center-WPF" Click="Github_Click" TextDecorations="None">
-                        <StackPanel Orientation="Horizontal">
-                            <Path Data="M8,0 C3.58,0 0,3.58 0,8 C0,11.54 2.29,14.53 5.47,15.59 C5.87,15.66 6.02,15.42 6.02,15.21 C6.02,15.02 6.01,14.39 6.01,13.72 C4,14.09 3.48,13.23 3.32,12.78 C3.23,12.55 2.84,11.84 2.5,11.65 C2.22,11.5 1.82,11.13 2.49,11.12 C3.12,11.11 3.57,11.7 3.72,11.94 C4.44,13.15 5.59,12.81 6.05,12.6 C6.12,12.08 6.33,11.73 6.56,11.53 C4.78,11.33 2.92,10.64 2.92,7.58 C2.92,6.71 3.23,5.99 3.74,5.43 C3.66,5.23 3.38,4.41 3.82,3.31 C3.82,3.31 4.49,3.1 6.02,4.13 C6.66,3.95 7.34,3.86 8.02,3.86 C8.7,3.86 9.38,3.95 10.02,4.13 C11.55,3.09 12.22,3.31 12.22,3.31 C12.66,4.41 12.38,5.23 12.3,5.43 C12.81,5.99 13.12,6.71 13.12,7.58 C13.12,10.65 11.25,11.33 9.47,11.53 C9.76,11.78 10.01,12.26 10.01,13.01 C10.01,14.08 10,14.94 10,15.21 C10,15.42 10.15,15.67 10.55,15.59 C13.71,14.53 16,11.53 16,8 C16,3.58 12.42,0 8,0 Z" 
-                                  Fill="White" 
-                                  Width="16" 
-                                  Height="16" 
-                                  Margin="0,0,5,0"
-                                  VerticalAlignment="Center"/>
-                            <TextBlock Text="Github" VerticalAlignment="Center"/>
+                
+                <!-- Hotkey Success Message Overlay -->
+                <Grid Grid.Row="0" Grid.RowSpan="3" 
+                      Visibility="{Binding ShowHotkeySuccessMessage, Converter={StaticResource BooleanToVisibilityConverter}}">
+                    <Border Background="{StaticResource ControlBackgroundBrush}" 
+                            BorderBrush="#4CAF50" 
+                            BorderThickness="1" 
+                            CornerRadius="5" 
+                            HorizontalAlignment="Center"
+                            VerticalAlignment="Center"
+                            Padding="15" Margin="0,0,0,0">
+                        <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                            <!-- Success Icon -->
+                            <TextBlock Text="✓" 
+                                       Foreground="#4CAF50" 
+                                       FontSize="18" 
+                                       FontWeight="Bold"
+                                       Margin="0,0,10,0"
+                                       VerticalAlignment="Center"/>
+                                       
+                            <!-- Success Message -->
+                            <TextBlock Text="{Binding HotkeySuccessText}" 
+                                       Foreground="White"
+                                       VerticalAlignment="Center"/>
                         </StackPanel>
-                    </Hyperlink>
-                </TextBlock>
+                    </Border>
+                </Grid>
             </Grid>
-        </Border>
-
-        <!-- Hotkey Assignment Overlay -->
-        <Grid Grid.Row="0" Grid.RowSpan="3" 
-              Background="#80000000" 
-              Visibility="{Binding IsHotkeyCapturing, Converter={StaticResource BooleanToVisibilityConverter}}" Margin="-20,-40,-20,-28">
-            <Grid.RowDefinitions>
-                <RowDefinition Height="59*"/>
-                <RowDefinition Height="25*"/>
-            </Grid.RowDefinitions>
-            <Border Background="{StaticResource ControlBackgroundBrush}" 
-                    BorderBrush="{StaticResource PrimaryBrush}" 
-                    BorderThickness="1" 
-                    CornerRadius="5" 
-                    Padding="20" Margin="254,134,254,8">
-                <StackPanel VerticalAlignment="Center">
-
-                    <TextBlock Text="Press the desired hotkey combination..." 
-                               TextWrapping="Wrap" TextAlignment="Center" 
-                               Margin="0,0,0,20" HorizontalAlignment="Center" VerticalAlignment="Center"/>
-
-                    <Button Content="Cancel" 
-                            HorizontalAlignment="Center" 
-                            Style="{StaticResource DefaultButtonStyle}" 
-                            Click="CancelHotkeyAssignment_Click"/>
-                </StackPanel>
-            </Border>
         </Grid>
-        
-        <!-- Hotkey Success Message Overlay -->
-        <Grid Grid.Row="0" Grid.RowSpan="3" 
-              Visibility="{Binding ShowHotkeySuccessMessage, Converter={StaticResource BooleanToVisibilityConverter}}">
-            <Border Background="{StaticResource ControlBackgroundBrush}" 
-                    BorderBrush="#4CAF50" 
-                    BorderThickness="1" 
-                    CornerRadius="5" 
-                    HorizontalAlignment="Center"
-                    VerticalAlignment="Center"
-                    Padding="15" Margin="0,0,0,0">
-                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                    <!-- Success Icon -->
-                    <TextBlock Text="✓" 
-                               Foreground="#4CAF50" 
-                               FontSize="18" 
-                               FontWeight="Bold"
-                               Margin="0,0,10,0"
-                               VerticalAlignment="Center"/>
-                               
-                    <!-- Success Message -->
-                    <TextBlock Text="{Binding HotkeySuccessText}" 
-                               Foreground="White"
-                               VerticalAlignment="Center"/>
-                </StackPanel>
-            </Border>
-        </Grid>
-    </Grid>
+    </Border>
 </Window>

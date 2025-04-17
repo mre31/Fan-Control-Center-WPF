@@ -8,6 +8,7 @@ using System.Windows;
 using System.Windows.Input;
 using System.Windows.Interop;
 using CFanControl.Models;
+using System.Linq;
 
 namespace CFanControl.Services
 {
@@ -258,17 +259,13 @@ namespace CFanControl.Services
             return false;
         }
 
-        private void UnregisterAllHotkeys()
+        public void UnregisterAllHotkeys()
         {
-            if (_registeredHotkeys != null)
+            foreach (var id in _registeredHotkeys.Keys.ToList())
             {
-                List<int> keys = new List<int>(_registeredHotkeys.Keys);
-                foreach (int id in keys)
-                {
-                    UnregisterHotKey(_hwnd, id);
-                }
-                _registeredHotkeys.Clear();
+                UnregisterHotKey(_hwnd, id);
             }
+            _registeredHotkeys.Clear();
         }
 
         public void Dispose()

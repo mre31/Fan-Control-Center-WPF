@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Text.Json;
 
@@ -8,10 +9,13 @@ namespace CFanControl.Models
     {
         public bool AutoStart { get; set; } = false;
         public bool MinimizeOnExit { get; set; } = false;
+        public bool AllowNotifications { get; set; } = true;
+        public Dictionary<string, string> ProfileHotkeys { get; set; } = new Dictionary<string, string>();
 
-        private static string SettingsFilePath => Path.Combine(
+        private static readonly string SettingsFilePath = Path.Combine(
             Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
-            "FanControl", "settings.json");
+            "CFanControl",
+            "settings.json");
 
         public static AppSettings Load()
         {
@@ -30,9 +34,9 @@ namespace CFanControl.Models
                     return settings ?? new AppSettings();
                 }
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                return new AppSettings();
+                Console.WriteLine($"Error loading settings: {ex.Message}");
             }
 
             return new AppSettings();
@@ -55,8 +59,9 @@ namespace CFanControl.Models
 
                 File.WriteAllText(SettingsFilePath, json);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
+                Console.WriteLine($"Error saving settings: {ex.Message}");
             }
         }
     }
