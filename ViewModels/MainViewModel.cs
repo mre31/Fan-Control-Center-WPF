@@ -243,9 +243,12 @@ namespace CFanControl.ViewModels
         public MainViewModel(Window mainWindow)
         {
             _hardwareInfo = new HardwareInfo();
+            
             _settings = AppSettings.Load();
+            
             _isAutoStartEnabled = _settings.AutoStart;
             _minimizeOnExit = _settings.MinimizeOnExit;
+            _allowNotifications = _settings.AllowNotifications;
             
             _profileNames = new ObservableCollection<string>();
             
@@ -259,12 +262,15 @@ namespace CFanControl.ViewModels
             
             CheckAutoStartStatus();
             
+            LoadSettings();
+            
             ApplyProfileCommand = new RelayCommand<string>(ApplyProfile);
             RemoveHotkeyCommand = new RelayCommand<string>(RemoveHotkey);
             StartHotkeyAssignmentCommand = new RelayCommand<string>(StartHotkeyAssignment);
             RemoveProfileCommand = new RelayCommand<string>(RemoveProfile);
             
             _hotkeyService.HotkeyTriggered += HotkeyService_HotkeyTriggered;
+            _hotkeyService.HotkeysChanged += HotkeyService_HotkeysChanged;
             _profileService.ProfilesChanged += ProfileService_ProfilesChanged;
             _awccService.OnSensorUpdated += AWCCService_OnSensorUpdated;
         }
@@ -406,7 +412,6 @@ namespace CFanControl.ViewModels
 
                 _profileService.SetLastProfile(SelectedProfileName);
                 
-                // Show notification for profile change
                 if (AllowNotifications)
                 {
                     ShowProfileChangeNotification(SelectedProfileName);
@@ -483,6 +488,8 @@ namespace CFanControl.ViewModels
                 HotkeySuccessText = $"Hotkey successfully assigned: {modifiers} + {key}";
                 ShowHotkeySuccessMessage = true;
                 
+                SaveAllSettings();
+                
                 _ = Task.Delay(1000).ContinueWith(_ => 
                 {
                     Application.Current.Dispatcher.Invoke(() => 
@@ -501,13 +508,18 @@ namespace CFanControl.ViewModels
             if (string.IsNullOrEmpty(profileName))
                 return;
                 
-            _hotkeyService.RemoveHotkey(profileName);
+            if (_hotkeyService.RemoveHotkey(profileName))
+            {
+                SaveAllSettings();
+            }
         }
         
         public void Cleanup()
         {
             try
             {
+                SaveAllSettings();
+                
                 if (_awccService != null)
                 {
                     try
@@ -523,6 +535,8 @@ namespace CFanControl.ViewModels
                 {
                     try
                     {
+                        _hotkeyService.HotkeyTriggered -= HotkeyService_HotkeyTriggered;
+                        _hotkeyService.HotkeysChanged -= HotkeyService_HotkeysChanged;
                         _hotkeyService.Dispose();
                     }
                     catch
@@ -535,10 +549,30 @@ namespace CFanControl.ViewModels
             }
         }
 
+        private void SaveAllSettings()
+        {
+            try
+            {
+                if (_hotkeyService != null)
+                {
+                    var mappings = _hotkeyService.GetHotkeyMappings();
+                    _settings.ProfileHotkeys = mappings;
+                }
+                
+                _settings.Save();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Error saving settings: {ex.Message}");
+            }
+        }
+
         public void Dispose()
         {
             try
             {
+                SaveAllSettings();
+                
                 if (_awccService != null)
                 {
                     try
@@ -800,6 +834,11 @@ namespace CFanControl.ViewModels
                 
                 ScheduleProfileSave();
             }
+        }
+
+        private void HotkeyService_HotkeysChanged(object sender, EventArgs e)
+        {
+            SaveAllSettings();
         }
     }
 }

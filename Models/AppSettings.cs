@@ -31,7 +31,11 @@ namespace CFanControl.Models
                 {
                     string json = File.ReadAllText(SettingsFilePath);
                     var settings = JsonSerializer.Deserialize<AppSettings>(json);
-                    return settings ?? new AppSettings();
+                    
+                    if (settings != null)
+                    {
+                        return settings;
+                    }
                 }
             }
             catch (Exception ex)
@@ -51,12 +55,12 @@ namespace CFanControl.Models
                 {
                     Directory.CreateDirectory(directory);
                 }
-
+                
                 string json = JsonSerializer.Serialize(this, new JsonSerializerOptions
                 {
                     WriteIndented = true
                 });
-
+                
                 File.WriteAllText(SettingsFilePath, json);
             }
             catch (Exception ex)

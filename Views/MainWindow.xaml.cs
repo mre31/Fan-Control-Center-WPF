@@ -48,7 +48,6 @@ namespace CFanControl.Views
         
         private void InitializeNotificationSystem()
         {
-            // Bildirim paneli için border oluşturma
             _notificationBorder = new System.Windows.Controls.Border
             {
                 Background = new SolidColorBrush((Color)System.Windows.Media.ColorConverter.ConvertFromString("#252526")),
@@ -63,7 +62,6 @@ namespace CFanControl.Views
                 Visibility = Visibility.Collapsed
             };
             
-            // İçerik olarak bir TextBlock
             var textBlock = new System.Windows.Controls.TextBlock
             {
                 Foreground = new SolidColorBrush(Colors.White),
@@ -73,14 +71,12 @@ namespace CFanControl.Views
             
             _notificationBorder.Child = textBlock;
             
-            // Ana grid'e ekleme
             if (Content is System.Windows.Controls.Grid grid)
             {
                 grid.Children.Add(_notificationBorder);
                 System.Windows.Controls.Panel.SetZIndex(_notificationBorder, 9999);
             }
             
-            // Timer oluşturma
             _notificationTimer = new DispatcherTimer();
             _notificationTimer.Tick += NotificationTimer_Tick;
         }
@@ -92,7 +88,6 @@ namespace CFanControl.Views
         
         public void ShowNotification(string message, int duration = 1000)
         {
-            // Ana iş parçacığında çalıştırma
             Dispatcher.Invoke(() =>
             {
                 try
@@ -100,7 +95,6 @@ namespace CFanControl.Views
                     if (_notificationBorder == null || !_viewModel.AllowNotifications)
                         return;
                     
-                    // Sistem tepsisinde bildirim gösterme
                     if (_notifyIcon != null && !IsActive)
                     {
                         _notifyIcon.BalloonTipTitle = "Fan Control Center";
@@ -109,20 +103,16 @@ namespace CFanControl.Views
                         _notifyIcon.ShowBalloonTip(duration);
                     }
                     
-                    // Uygulama açıksa içeride bildirim gösterme
                     if (IsActive)
                     {
-                        // TextBlock içeriğini güncelleme
                         if (_notificationBorder.Child is System.Windows.Controls.TextBlock textBlock)
                         {
                             textBlock.Text = message;
                         }
                         
-                        // Timer'ı durdurma ve yeniden başlatma
                         _notificationTimer.Stop();
                         _notificationTimer.Interval = TimeSpan.FromMilliseconds(duration);
                         
-                        // Animasyon ile gösterme
                         _notificationBorder.Visibility = Visibility.Visible;
                         DoubleAnimation fadeIn = new DoubleAnimation(0, 1, TimeSpan.FromMilliseconds(200));
                         _notificationBorder.BeginAnimation(UIElement.OpacityProperty, fadeIn);
@@ -143,7 +133,6 @@ namespace CFanControl.Views
             {
                 _notificationTimer.Stop();
                 
-                // Animasyon ile gizleme
                 DoubleAnimation fadeOut = new DoubleAnimation(1, 0, TimeSpan.FromMilliseconds(200));
                 fadeOut.Completed += (s, e) =>
                 {
@@ -194,14 +183,12 @@ namespace CFanControl.Views
             
             var contextMenu = new System.Windows.Forms.ContextMenu();
             
-            // Show pencere öğesi
             var showItem = new System.Windows.Forms.MenuItem("Show");
             showItem.Click += (s, e) => RestoreWindow();
             contextMenu.MenuItems.Add(showItem);
             
-            contextMenu.MenuItems.Add("-"); // Ayırıcı
+            contextMenu.MenuItems.Add("-");
             
-            // Profil seçim alt menüsü
             var profilesMenu = new System.Windows.Forms.MenuItem("Profiles");
             if (_viewModel != null && _viewModel.ProfileNames != null)
             {
@@ -211,14 +198,13 @@ namespace CFanControl.Views
                     profileItem.RadioCheck = true;
                     profileItem.Checked = profileName == _viewModel.SelectedProfileName;
                     
-                    // Profil seçim işleyicisi
                     profileItem.Click += (s, e) => 
                     {
                         var menuItem = s as System.Windows.Forms.MenuItem;
                         if (menuItem != null)
                         {
                             _viewModel.SelectedProfileName = menuItem.Text;
-                            UpdateNotifyIconMenu(); // Menüyü güncelle
+                            UpdateNotifyIconMenu();
                         }
                     };
                     
@@ -227,10 +213,8 @@ namespace CFanControl.Views
             }
             contextMenu.MenuItems.Add(profilesMenu);
             
-            // Ayarlar alt menüsü
             var settingsMenu = new System.Windows.Forms.MenuItem("Settings");
             
-            // Otomatik başlatma ayarı
             var autoStartItem = new System.Windows.Forms.MenuItem("Start with Windows");
             autoStartItem.Checked = _viewModel != null && _viewModel.IsAutoStartEnabled;
             autoStartItem.Click += (s, e) => 
@@ -238,12 +222,11 @@ namespace CFanControl.Views
                 if (_viewModel != null)
                 {
                     _viewModel.IsAutoStartEnabled = !_viewModel.IsAutoStartEnabled;
-                    UpdateNotifyIconMenu(); // Menüyü güncelle
+                    UpdateNotifyIconMenu();
                 }
             };
             settingsMenu.MenuItems.Add(autoStartItem);
             
-            // Çıkışta küçültme ayarı
             var minimizeOnExitItem = new System.Windows.Forms.MenuItem("Minimize on Exit");
             minimizeOnExitItem.Checked = _viewModel != null && _viewModel.MinimizeOnExit;
             minimizeOnExitItem.Click += (s, e) => 
@@ -251,12 +234,11 @@ namespace CFanControl.Views
                 if (_viewModel != null)
                 {
                     _viewModel.MinimizeOnExit = !_viewModel.MinimizeOnExit;
-                    UpdateNotifyIconMenu(); // Menüyü güncelle
+                    UpdateNotifyIconMenu();
                 }
             };
             settingsMenu.MenuItems.Add(minimizeOnExitItem);
             
-            // Bildirimlere izin verme ayarı
             var allowNotificationsItem = new System.Windows.Forms.MenuItem("Allow Notifications");
             allowNotificationsItem.Checked = _viewModel != null && _viewModel.AllowNotifications;
             allowNotificationsItem.Click += (s, e) => 
@@ -265,27 +247,24 @@ namespace CFanControl.Views
                 {
                     _viewModel.AllowNotifications = !_viewModel.AllowNotifications;
                     
-                    // Bildirimler açıldığında bir test bildirimi göster
                     if (_viewModel.AllowNotifications)
                     {
                         ShowNotification("Notifications enabled", 1500);
                     }
                     
-                    UpdateNotifyIconMenu(); // Menüyü güncelle
+                    UpdateNotifyIconMenu();
                 }
             };
             settingsMenu.MenuItems.Add(allowNotificationsItem);
             
             contextMenu.MenuItems.Add(settingsMenu);
             
-            contextMenu.MenuItems.Add("-"); // Ayırıcı
+            contextMenu.MenuItems.Add("-");
             
-            // Çıkış öğesi
             var exitItem = new System.Windows.Forms.MenuItem("Exit");
             exitItem.Click += (s, e) => CloseApplication();
             contextMenu.MenuItems.Add(exitItem);
             
-            // Menüyü atama
             _notifyIcon.ContextMenu = contextMenu;
         }
         
@@ -293,7 +272,6 @@ namespace CFanControl.Views
         {
             await _viewModel.InitializeAsync();
             
-            // ViewModel yüklendikten sonra menüyü güncelle
             UpdateNotifyIconMenu();
             
             string[] args = Environment.GetCommandLineArgs();
@@ -375,7 +353,6 @@ namespace CFanControl.Views
             }
             else
             {
-                // NotifyIcon'ın menüsünü güncelle
                 UpdateNotifyIconMenu();
             }
             

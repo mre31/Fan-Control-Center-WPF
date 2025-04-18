@@ -268,6 +268,37 @@ namespace CFanControl.Services
             _registeredHotkeys.Clear();
         }
 
+        public Dictionary<string, string> GetHotkeyMappings()
+        {
+            var mappings = new Dictionary<string, string>();
+            
+            foreach (var kvp in _hotkeyBindings)
+            {
+                string profileName = kvp.Key;
+                var binding = kvp.Value;
+                
+                if (binding != null && binding.Key != Key.None)
+                {
+                    string hotkeyString = string.Empty;
+                    
+                    if (binding.Modifiers.HasFlag(ModifierKeys.Control))
+                        hotkeyString += "Control+";
+                    if (binding.Modifiers.HasFlag(ModifierKeys.Alt))
+                        hotkeyString += "Alt+";
+                    if (binding.Modifiers.HasFlag(ModifierKeys.Shift))
+                        hotkeyString += "Shift+";
+                    if (binding.Modifiers.HasFlag(ModifierKeys.Windows))
+                        hotkeyString += "Windows+";
+                    
+                    hotkeyString += binding.Key.ToString();
+                    
+                    mappings[profileName] = hotkeyString;
+                }
+            }
+            
+            return mappings;
+        }
+
         public void Dispose()
         {
             Dispose(true);
